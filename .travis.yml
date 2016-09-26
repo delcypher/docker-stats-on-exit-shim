@@ -1,5 +1,7 @@
 language: go
 install:
-  - go get ./...
+  - go get -v ./...
 script:
   - go build
+  - ./docker-stats-on-exit-shim output.json `which sleep` 1
+  - cat output.json
