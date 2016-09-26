@@ -18,6 +18,7 @@ import (
   "fmt"
   "os"
   "os/exec"
+  "os/signal"
   "syscall"
   "time"
   cgroups "github.com/opencontainers/runc/libcontainer/cgroups"
@@ -42,6 +43,19 @@ const (
   FailExitCode = 1
 )
 
+var signalsToForward = []os.Signal {
+  // Unfortunately we can't forward SIGKILL or SIGSTOP
+  syscall.SIGCONT,
+  syscall.SIGHUP,
+  syscall.SIGINT,
+  syscall.SIGPROF,
+  syscall.SIGQUIT,
+  syscall.SIGTERM,
+  syscall.SIGUSR1,
+  syscall.SIGUSR2,
+}
+
+
 func fail(template string, args ...interface{}) {
   msg := os.Args[0] + ": " + template
   fmt.Fprintf(os.Stderr, msg, args...)
@@ -49,8 +63,6 @@ func fail(template string, args ...interface{}) {
 }
 
 func main() {
-  // FIXME: We should set up signal handlers so we can forward
-  // all the import signals to the child process.
   exitCode := 0;
 
   if len(os.Args) < 3 {
@@ -95,12 +107,27 @@ func main() {
   // what to use.
   manager := cgroups_fs.Manager{ Paths:subsystemToPathMap }
 
+
   // Run the subproccess
   cmd := exec.Command(os.Args[2], os.Args[3:]...)
   cmd.Stdin = os.Stdin
   cmd.Stdout = os.Stdout
   cmd.Stderr = os.Stderr
   cmd.Env = nil // Use the environment of the current process.
+
+  // Setup signal handling forwarding.
+  signalChan := make(chan os.Signal, 1)
+  signal.Notify(signalChan, signalsToForward...)
+  go func() {
+    // Receive the signal and forward to the process
+    signal := <-signalChan
+    signalSendErr := cmd.Process.Signal(signal)
+    // FIXME: We should optionally log this information to a file.
+    //fmt.Printf("Forwarding %v to PID %v\n", signal, cmd.Process.Pid)
+    if signalSendErr != nil {
+      // fmt.Printf("Failed to send signal: %s", signalSendErr)
+    }
+  }()
 
   // FIXME: This is the wrong way to measure wall-clock time
   // as it is sensitive to system clock adjustments.
@@ -112,7 +139,7 @@ func main() {
   if err != nil {
     fail("Failed to retrieve stats: %s\n", err)
   }
-  
+
   if exit != nil {
     if exitError, rightType := exit.(*exec.ExitError); rightType {
       // The command exited with a non-zero exit code
