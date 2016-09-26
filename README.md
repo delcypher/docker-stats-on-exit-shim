@@ -1,5 +1,7 @@
 # Docker Stats On Exit Shim
 
+[![Build Status](https://travis-ci.org/delcypher/docker-stats-on-exit-shim.svg?branch=master)](https://travis-ci.org/delcypher/docker-stats-on-exit-shim)
+
 This is a small utility designed to capture the statistics for the run of a Docker
 container before its destruction.
 
