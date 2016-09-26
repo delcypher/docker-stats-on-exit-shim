@@ -1,1 +1,4 @@
 docker-stats-on-exit-shim
+
+# Vim swap files
+.*.swp
