@@ -119,13 +119,20 @@ func main() {
   signalChan := make(chan os.Signal, 1)
   signal.Notify(signalChan, signalsToForward...)
   go func() {
-    // Receive the signal and forward to the process
-    signal := <-signalChan
-    signalSendErr := cmd.Process.Signal(signal)
-    // FIXME: We should optionally log this information to a file.
-    //fmt.Printf("Forwarding %v to PID %v\n", signal, cmd.Process.Pid)
-    if signalSendErr != nil {
-      // fmt.Printf("Failed to send signal: %s", signalSendErr)
+    for {
+      // Receive the signal and forward to the process
+      signal, notClosed := <-signalChan
+      if !notClosed {
+        // Chanel has been closed. There are no more signals to
+        // forward.
+        break
+      }
+      signalSendErr := cmd.Process.Signal(signal)
+      // FIXME: We should optionally log this information to a file.
+      //fmt.Printf("Forwarding %v to PID %v\n", signal, cmd.Process.Pid)
+      if signalSendErr != nil {
+        // fmt.Printf("Failed to send signal: %s", signalSendErr)
+      }
     }
   }()
 
@@ -135,6 +142,7 @@ func main() {
   exit := cmd.Run()
   wallclockElapsed := time.Since(wallclockStart)
   stats, err := manager.GetStats()
+  close(signalChan)
 
   if err != nil {
     fail("Failed to retrieve stats: %s\n", err)
