@@ -1,0 +1,8 @@
+docker-stats-on-exit-shim
+
+# Vim swap files
+.*.swp
+.git
+.gitignore
+.travis.yml
+Dockerfile
