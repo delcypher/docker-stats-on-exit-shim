@@ -21,4 +21,4 @@ WORKDIR /
 
 COPY --from=builder /go/bin/docker-stats-on-exit-shim .
 
-CMD ["/docker-events-notifier"]
+CMD ["/docker-stats-on-exit-shim"]
