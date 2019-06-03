@@ -2,9 +2,12 @@ FROM golang:1.12 as builder
 
 WORKDIR $GOPATH/src/github.com/delcypher/docker-stats-on-exit-shim
 
-COPY . .
+COPY main.go .
 
-RUN git submodule init && git submodule update
+RUN git clone https://github.com/opencontainers/runc.git vendor/github.com/opencontainers/runc && \
+    cd vendor/github.com/opencontainers/runc && \
+    git checkout a2a6e82
+
 RUN go get -d -v ./...
 
 RUN go install -v ./...
