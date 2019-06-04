@@ -10,12 +10,23 @@ real command by waiting for it to exit and then querying the active Cgroup subsy
 to gather their statistics. It dumps these statistics to a file as JSON and then exits
 with the exit code of the real command.
 
-## Example
+## Environment variables
+- `STATS_OUTPUT_FILE=/dev/stdout` file path you want your output to be saved to (Default /dev/stdout)
+- `STATS_OUTPUT_PREFIX=` any prefix you want to add before stats output (Default blank)
+- `STATS_OUTPUT_MINIFIED=false` true|false (Default true)
 
-```bash
-$ docker run --rm -ti -v`pwd`:/tmp/:rw ubuntu /tmp/docker-stats-on-exit-shim /tmp/output.json /bin/sleep 1
-$ cat output.json
+## Example
+Dockerfile
 ```
+COPY --from=hasnat/docker-stats-on-exit-shim /docker-stats-on-exit-shim .
+ENTRYPOINT ["/docker-stats-on-exit-shim"]
+CMD ["sleep", "1"]
+```
+Example Run
+```bash
+$ docker run --rm -ti hasnat/docker-stats-on-exit-shim /bin/sleep 1
+```
+Output example
 ```json
 {
   "wall_time": 1000765975,
@@ -53,10 +64,7 @@ $ cat output.json
 mkdir -p src/github.com/delcypher
 export GOPATH=`pwd`
 cd src/github.com/delcypher
-git clone git@github.com:delcypher/docker-stats-on-exit-shim.git
-cd docker-stats-on-exit-shim
-git submodule init && git submodule update
-go get .
+dep ensure
 go build
 ```
 
