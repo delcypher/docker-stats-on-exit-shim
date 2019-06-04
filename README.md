@@ -11,11 +11,17 @@ to gather their statistics. It dumps these statistics to a file as JSON and then
 with the exit code of the real command.
 
 ## Example
-
-```bash
-$ docker run --rm -ti -v`pwd`:/tmp/:rw ubuntu /tmp/docker-stats-on-exit-shim /tmp/output.json /bin/sleep 1
-$ cat output.json
+Dockerfile
 ```
+COPY --from=hasnat/docker-stats-on-exit-shim /docker-stats-on-exit-shim .
+ENTRYPOINT ["/docker-stats-on-exit-shim", "/dev/stdout"]
+CMD ["sleep", "1"]
+```
+Example Run
+```bash
+$ docker run --rm -ti hasnat/docker-stats-on-exit-shim /bin/sleep 1
+```
+Output example
 ```json
 {
   "wall_time": 1000765975,
@@ -53,10 +59,7 @@ $ cat output.json
 mkdir -p src/github.com/delcypher
 export GOPATH=`pwd`
 cd src/github.com/delcypher
-git clone git@github.com:delcypher/docker-stats-on-exit-shim.git
-cd docker-stats-on-exit-shim
-git submodule init && git submodule update
-go get .
+dep ensure
 go build
 ```
 
