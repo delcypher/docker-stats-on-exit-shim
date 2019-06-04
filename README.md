@@ -10,11 +10,16 @@ real command by waiting for it to exit and then querying the active Cgroup subsy
 to gather their statistics. It dumps these statistics to a file as JSON and then exits
 with the exit code of the real command.
 
+## Environment variables
+- `STATS_OUTPUT_FILE=/dev/stdout` file path you want your output to be saved to (Default /dev/stdout)
+- `STATS_OUTPUT_PREFIX=` any prefix you want to add before stats output (Default blank)
+- `STATS_OUTPUT_MINIFIED=false` true|false (Default true)
+
 ## Example
 Dockerfile
 ```
 COPY --from=hasnat/docker-stats-on-exit-shim /docker-stats-on-exit-shim .
-ENTRYPOINT ["/docker-stats-on-exit-shim", "/dev/stdout"]
+ENTRYPOINT ["/docker-stats-on-exit-shim"]
 CMD ["sleep", "1"]
 ```
 Example Run

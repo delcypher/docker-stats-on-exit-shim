@@ -15,5 +15,7 @@ FROM alpine:latest
 WORKDIR /
 
 COPY --from=builder /docker-stats-on-exit-shim .
-ENTRYPOINT ["/docker-stats-on-exit-shim", "/dev/stdout"]
+
+ENTRYPOINT ["/docker-stats-on-exit-shim"]
+
 CMD ["sleep", "1"]

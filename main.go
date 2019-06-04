@@ -21,15 +21,15 @@ import (
   "os/signal"
   "syscall"
   "time"
+  "strconv"
   cgroups "github.com/opencontainers/runc/libcontainer/cgroups"
   cgroups_fs "github.com/opencontainers/runc/libcontainer/cgroups/fs"
 )
 
 func printUsage() {
-  fmt.Printf("%s <stats_file> <command> [arg...]\n", os.Args[0])
-  fmt.Println("")
+  fmt.Printf("%s <command> [arg...]\n", os.Args[0])
+  fmt.Println("environment variables STATS_OUTPUT_FILE=/dev/stdout STATS_OUTPUT_MINIFIED=false STATS_OUTPUT_PREFIX=")
   fmt.Println("Runs <command> and on termination outputs cgroup usage information")
-  fmt.Println("as JSON to <stats_file>")
 }
 
 type Stats struct {
@@ -62,16 +62,24 @@ func fail(template string, args ...interface{}) {
   os.Exit(FailExitCode)
 }
 
+func getEnv(key, defaultValue string) string {
+  value := os.Getenv(key)
+  if len(value) == 0 {
+    return defaultValue
+  }
+  return value
+}
+
 func main() {
   exitCode := 0;
 
-  if len(os.Args) < 3 {
+  if len(os.Args) < 2 {
     printUsage()
     os.Exit(1)
   }
 
   // Open file for writing stats
-  f, err := os.Create(os.Args[1])
+  f, err := os.Create(getEnv("STATS_OUTPUT_FILE", "/dev/stdout"))
   if err != nil {
     fail("Failed to create stats file %s: %s\n", os.Args[1], err)
   }
@@ -109,7 +117,7 @@ func main() {
 
 
   // Run the subproccess
-  cmd := exec.Command(os.Args[2], os.Args[3:]...)
+  cmd := exec.Command(os.Args[1], os.Args[2:]...)
   cmd.Stdin = os.Stdin
   cmd.Stdout = os.Stdout
   cmd.Stderr = os.Stderr
@@ -168,10 +176,21 @@ func main() {
   }
 
   //fmt.Printf("Stats: %+v", combinedStats)
-  statsAsBytes, err := json.MarshalIndent(&combinedStats, "", "  ")
+  statsPrefix := getEnv("STATS_OUTPUT_PREFIX", "")
+  minified := false
+  minified, _ = strconv.ParseBool(getEnv("STATS_OUTPUT_MINIFIED", "false"))
+  var statsAsBytes []byte
+  if minified {
+    statsAsBytes, err = json.Marshal(&combinedStats)
+  } else {
+    statsAsBytes, err = json.MarshalIndent(&combinedStats, "", "  ")
+  }
+
   if err != nil {
     fail("Failed to serialize stats to JSON: %s\n", err)
   }
+
+  _, err = f.Write([]byte(statsPrefix))
   _, err = f.Write(statsAsBytes)
   if err != nil {
     fail("Failed to write stats to file: %s\n", err)
